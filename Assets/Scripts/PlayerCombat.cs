@@ -73,7 +73,7 @@ public class PlayerCombat : NetworkBehaviour
         if (!targetPlayer || targetPlayer == playerNetwork)
             return;
         
-        int nextHp = Mathf.Max(0, targetPlayer.hp.Value - damage);
-        targetPlayer.hp.Value = nextHp;
+        int nextHp = Mathf.Max(0, targetPlayer.Hp.Value - damage);
+        targetPlayer.Hp.Value = nextHp;
     }
 }

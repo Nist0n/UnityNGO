@@ -1175,8 +1175,7 @@ GameObject:
   - component: {fileID: 1432674981}
   - component: {fileID: 1432674980}
   - component: {fileID: 1432674982}
-  - component: {fileID: 1432674984}
-  - component: {fileID: 1432674983}
+  - component: {fileID: 1432674985}
   m_Layer: 0
   m_Name: NetworkManager
   m_TagString: Untagged
@@ -1215,7 +1214,7 @@ MonoBehaviour:
   _dontRoute: 0
   _reuseAddress: 0
   _ipv4BindAddress: 
-  _enableIpv6: 1
+  _enableIpv6: 0
   _ipv6BindAddress: 
   _port: 7770
   _maximumClients: 4095
@@ -1257,7 +1256,7 @@ MonoBehaviour:
   - {fileID: 1935926482}
   - {fileID: 1671621424}
   - {fileID: 2063616340}
---- !u!114 &1432674983
+--- !u!114 &1432674985
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -1266,35 +1265,12 @@ MonoBehaviour:
   m_GameObject: {fileID: 1432674976}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e08bb003fce297d4086cf8cba5aa459a, type: 3}
+  m_Script: {fileID: 11500000, guid: f9b6b565cd9533c4ebc18003f0fc18a2, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: FishNet.Runtime::FishNet.Managing.Predicting.PredictionManager
-  _reduceReconcilesWithFramerate: 1
-  _minimumClientReconcileFramerate: 50
-  _createLocalStates: 1
-  _stateInterpolation: 2
-  _stateOrder: 1
-  _dropExcessiveReplicates: 1
-  _maximumServerReplicates: 15
---- !u!114 &1432674984
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1432674976}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 3fdaae44044276a49a52229c1597e33b, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: FishNet.Runtime::FishNet.Managing.Timing.TimeManager
-  _updateOrder: 0
-  _timingType: 0
-  _allowTickDropping: 1
-  _maximumFrameTicks: 3
-  _tickRate: 30
-  _pingInterval: 1
-  _physicsMode: 0
+  m_EditorClassIdentifier: FishNet.Runtime::FishNet.Component.Utility.PingDisplay
+  _color: {r: 1, g: 0, b: 0, a: 1}
+  _placement: 1
+  _hideTickRate: 1
 --- !u!1 &1671621423
 GameObject:
   m_ObjectHideFlags: 0

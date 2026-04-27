@@ -1,7 +1,8 @@
-using Unity.Netcode;
-using UnityEngine;
 using System.Collections;
-using UnityEngine.Serialization;
+using FishNet;
+using FishNet.Object;
+using FishNet.Transporting;
+using UnityEngine;
 
 public class PickupManager : MonoBehaviour
 {
@@ -9,36 +10,30 @@ public class PickupManager : MonoBehaviour
     [SerializeField] private Transform[] spawnPoints;
     [SerializeField] private float respawnDelay = 10f;
 
+    private bool _serverSpawnedPickups;
+
     private void Start()
     {
-        if (NetworkManager.Singleton)
-        {
-            Debug.Log("NetworkManager.Singleton is called");
-            NetworkManager.Singleton.OnServerStarted += OnServerStarted;
-        }
+        if (!InstanceFinder.NetworkManager) return; InstanceFinder.NetworkManager.ServerManager.OnServerConnectionState += OnServerConnectionState;
     }
 
     private void OnDestroy()
     {
-        if (NetworkManager.Singleton)
-        {
-            NetworkManager.Singleton.OnServerStarted -= OnServerStarted;
-        }
+        if (InstanceFinder.NetworkManager) InstanceFinder.NetworkManager.ServerManager.OnServerConnectionState -= OnServerConnectionState;
     }
 
-    private void OnServerStarted()
+    private void OnServerConnectionState(ServerConnectionStateArgs args)
     {
-        Debug.Log("Starting server");
+        if (args.ConnectionState == LocalConnectionState.Stopped) _serverSpawnedPickups = false;
+        if (args.ConnectionState != LocalConnectionState.Started) return;
+        if (_serverSpawnedPickups) return;
+        _serverSpawnedPickups = true;
         SpawnAll();
     }
 
     private void SpawnAll()
     {
-        if (spawnPoints == null || spawnPoints.Length == 0)
-        {
-            return;
-        }
-
+        if (spawnPoints == null || spawnPoints.Length == 0) return;
         foreach (var point in spawnPoints)
         {
             if (point) SpawnPickup(point.position);
@@ -58,29 +53,25 @@ public class PickupManager : MonoBehaviour
 
     private void SpawnPickup(Vector3 position)
     {
-        if (!healthPickupPrefab)
-        {
-            return;
-        }
+        if (!healthPickupPrefab) return;
+        if (!InstanceFinder.ServerManager) return;
+        if (!InstanceFinder.IsServerStarted) return;
 
         var go = Instantiate(healthPickupPrefab, position, Quaternion.identity);
-        var pickup = go.GetComponent<HealthPickup>();
-        
-        if (!pickup)
+        if (!go.TryGetComponent(out HealthPickup pickup))
         {
-            Destroy(go);
+            Destroy(go); 
             return;
         }
         
         pickup.Init(this);
         
-        var networkObject = go.GetComponent<NetworkObject>();
-        if (!networkObject)
+        if (!go.TryGetComponent(out NetworkObject networkObject))
         {
-            Destroy(go);
+            Destroy(go); 
             return;
         }
         
-        networkObject.Spawn();
+        InstanceFinder.ServerManager.Spawn(networkObject);
     }
 }

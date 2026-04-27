@@ -1,7 +1,6 @@
 using System.Collections;
+using FishNet.Object;
 using TMPro;
-using Unity.Collections;
-using Unity.Netcode;
 using UnityEngine;
 
 public class PlayerView : NetworkBehaviour
@@ -15,88 +14,92 @@ public class PlayerView : NetworkBehaviour
     [SerializeField] private GameObject canvasObject;
 
     private Coroutine _respawnTimerCoroutine;
-    
-    public override void OnNetworkSpawn()
+
+    public override void OnStartNetwork()
     {
+        base.OnStartNetwork();
         if (!playerNetwork) return;
-        playerNetwork.Nickname.OnValueChanged += OnNicknameChanged;
-        playerNetwork.Hp.OnValueChanged += OnHpChanged;
-        
-        OnNicknameChanged(default, playerNetwork.Nickname.Value);
-        OnHpChanged(0, playerNetwork.Hp.Value);
-        
-        if (!IsLocalPlayer) return;
-        
-        if (canvasObject)
+
+        playerNetwork.Nickname.OnChange += OnNicknameChanged;
+        playerNetwork.Hp.OnChange += OnHpChanged;
+
+        OnNicknameChanged(string.Empty, playerNetwork.Nickname.Value, false);
+        OnHpChanged(0, playerNetwork.Hp.Value, false);
+
+        if (!Owner.IsLocalClient) return;
+
+        if (canvasObject) canvasObject.SetActive(true);
+
+        playerNetwork.IsAlive.OnChange += OnIsAliveChanged;
+        OnIsAliveChanged(true, playerNetwork.IsAlive.Value, false);
+
+        if (!playerShooting) return;
+        playerShooting.CurrentAmmo.OnChange += OnBulletsCountChanged;
+        int ammoDisplay = playerShooting.CurrentAmmo.Value > 0 ? playerShooting.CurrentAmmo.Value : playerShooting.MaxAmmo;
+        OnBulletsCountChanged(0, ammoDisplay, false);
+    }
+
+    public override void OnStopNetwork()
+    {
+        if (playerNetwork)
         {
-            canvasObject.SetActive(IsLocalPlayer);
+            playerNetwork.Nickname.OnChange -= OnNicknameChanged;
+            playerNetwork.Hp.OnChange -= OnHpChanged;
+            playerNetwork.IsAlive.OnChange -= OnIsAliveChanged;
         }
-        
-        playerNetwork.IsAlive.OnValueChanged += OnIsAliveChanged;
-        OnIsAliveChanged(true, playerNetwork.IsAlive.Value);
-        
-        if (!playerShooting) return;
-        playerShooting.CurrentAmmo.OnValueChanged += OnBulletsCountChanged;
-        
-        OnBulletsCountChanged(0, playerShooting.MaxAmmo);
+
+        if (playerShooting)
+            playerShooting.CurrentAmmo.OnChange -= OnBulletsCountChanged;
+
+        base.OnStopNetwork();
     }
 
-    public override void OnNetworkDespawn()
+    private void OnNicknameChanged(string oldValue, string newValue, bool asServer)
     {
-        if (!playerNetwork) return;
-        playerNetwork.Nickname.OnValueChanged -= OnNicknameChanged;
-        playerNetwork.Hp.OnValueChanged -= OnHpChanged;
-        playerNetwork.IsAlive.OnValueChanged -= OnIsAliveChanged;
-        if (!playerShooting) return;
-        playerShooting.CurrentAmmo.OnValueChanged -= OnBulletsCountChanged;
+        if (nicknameText) nicknameText.text = newValue;
     }
 
-    private void OnNicknameChanged(FixedString32Bytes oldValue, FixedString32Bytes newValue)
+    private void OnHpChanged(int oldValue, int newValue, bool asServer)
     {
-        nicknameText.text = newValue.ToString();
+        if (hpText) hpText.text = $"HP: {newValue}";
     }
 
-    private void OnHpChanged(int oldValue, int newValue)
+    private void OnBulletsCountChanged(int oldValue, int newValue, bool asServer)
     {
-        hpText.text = $"HP: {newValue}";
+        if (bulletsCount) bulletsCount.text = $"Bullets: {newValue}";
     }
-    
-    private void OnBulletsCountChanged(int oldValue, int newValue)
-    {
-        bulletsCount.text = $"Bullets: {newValue}";
-    }
-    
-    private void OnIsAliveChanged(bool oldValue, bool newValue)
+
+    private void OnIsAliveChanged(bool oldValue, bool newValue, bool asServer)
     {
         if (newValue)
         {
             if (_respawnTimerCoroutine != null)
             {
                 StopCoroutine(_respawnTimerCoroutine);
-                respawnTimerText.text = "";
+                if (respawnTimerText) respawnTimerText.text = "";
                 _respawnTimerCoroutine = null;
             }
         }
         else
         {
             if (_respawnTimerCoroutine != null) StopCoroutine(_respawnTimerCoroutine);
-                
+
             _respawnTimerCoroutine = StartCoroutine(RespawnTimerCoroutine());
         }
     }
-    
+
     private IEnumerator RespawnTimerCoroutine()
     {
         float remainingTime = 3f;
-        
+
         while (remainingTime > 0)
         {
             if (respawnTimerText) respawnTimerText.text = $"Respawning in {remainingTime:F1}...";
-                
+
             yield return new WaitForSeconds(0.1f);
             remainingTime -= 0.1f;
         }
-        
+
         if (respawnTimerText) respawnTimerText.text = "";
     }
 }

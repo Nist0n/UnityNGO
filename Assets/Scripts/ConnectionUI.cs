@@ -1,21 +1,25 @@
 using System;
+using FishNet;
+using FishNet.Managing;
 using TMPro;
-using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
 
 public class ConnectionUI : MonoBehaviour
 {
+    [SerializeField] private NetworkManager networkManager;
     [SerializeField] private Button startHostButton;
     [SerializeField] private Button startClientButton;
     [SerializeField] private TMP_InputField nicknameInputField;
-    
+
     public static event Action<string> OnNameChanged;
-    
+
     public static string PlayerNickname { get; private set; } = "Player";
-    
+
     private void Start()
     {
+        if (!networkManager) networkManager = InstanceFinder.NetworkManager;
+
         startHostButton.onClick.AddListener(StartHost);
         startClientButton.onClick.AddListener(StartClient);
         nicknameInputField.onValueChanged.AddListener(ChangeName);
@@ -24,14 +28,16 @@ public class ConnectionUI : MonoBehaviour
     private void StartClient()
     {
         SaveNickname();
-        NetworkManager.Singleton.StartClient();
+        if (networkManager) networkManager.ClientManager.StartConnection();
         DeactivateButtons();
     }
 
     private void StartHost()
     {
         SaveNickname();
-        NetworkManager.Singleton.StartHost();
+        if (!networkManager) return;
+        networkManager.ServerManager.StartConnection();
+        networkManager.ClientManager.StartConnection();
         DeactivateButtons();
     }
 
@@ -40,20 +46,19 @@ public class ConnectionUI : MonoBehaviour
         startHostButton.interactable = false;
         startClientButton.interactable = false;
     }
-    
+
     private void SaveNickname()
     {
-        string rawValue;
-        if (nicknameInputField.text != null) rawValue = nicknameInputField.text;
-        else rawValue = string.Empty;
-        
+        nicknameInputField.DeactivateInputField(true);
+
+        string rawValue = nicknameInputField.text != null ? nicknameInputField.text : string.Empty;
         if (string.IsNullOrWhiteSpace(rawValue)) PlayerNickname = "Player";
         else PlayerNickname = rawValue.Trim();
     }
 
     private void ChangeName(string playerName)
     {
-        PlayerNickname = playerName.Trim();
+        PlayerNickname = string.IsNullOrEmpty(playerName) ? "Player" : playerName.Trim();
         OnNameChanged?.Invoke(playerName);
     }
 }

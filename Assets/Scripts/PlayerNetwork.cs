@@ -1,58 +1,60 @@
-using System;
 using System.Collections;
-using Unity.Collections;
-using Unity.Netcode;
-using Unity.Netcode.Components;
+using FishNet.Object;
+using FishNet.Object.Synchronizing;
 using UnityEngine;
-using UnityEngine.Serialization;
 using Random = UnityEngine.Random;
 
 public class PlayerNetwork : NetworkBehaviour
 {
     [SerializeField] private MeshRenderer meshRenderer;
-    
-    public NetworkVariable<FixedString32Bytes> Nickname;
-    public NetworkVariable<int> Hp = new(100);
-    public NetworkVariable<bool> IsAlive = new(true);
-    
+
+    public readonly SyncVar<string> Nickname = new("Player", new());
+    public readonly SyncVar<int> Hp = new(100, new());
+    public readonly SyncVar<bool> IsAlive = new(true, new());
+
     private GameObject[] _spawnPoints;
+
+    private void Awake()
+    {
+        Hp.OnChange += Hp_OnChange;
+        IsAlive.OnChange += IsAlive_OnChange;
+    }
 
     private void Start()
     {
         _spawnPoints = GameObject.FindGameObjectsWithTag("Spawner");
     }
-
-    public override void OnNetworkSpawn()
+    
+    public override void OnStartClient()
     {
-        if (IsOwner)
-        {
-            ConnectionUI.OnNameChanged += SubmitNicknameServerRpc;
-            SubmitNicknameServerRpc(ConnectionUI.PlayerNickname);
-        }
-        Hp.OnValueChanged += OnHpChanged;
-        IsAlive.OnValueChanged += OnIsAliveChanged;
+        base.OnStartClient();
+        if (!Owner.IsLocalClient) return;
+        
+        ConnectionUI.OnNameChanged -= SubmitNicknameServerRpc;
+        ConnectionUI.OnNameChanged += SubmitNicknameServerRpc;
+        SubmitNicknameServerRpc(ConnectionUI.PlayerNickname);
     }
 
-    public override void OnNetworkDespawn()
+    public override void OnStopClient()
     {
         ConnectionUI.OnNameChanged -= SubmitNicknameServerRpc;
-        Hp.OnValueChanged -= OnHpChanged;
-        IsAlive.OnValueChanged -= OnIsAliveChanged;
+        base.OnStopClient();
     }
 
     [ServerRpc(RequireOwnership = false)]
     private void SubmitNicknameServerRpc(string nick)
     {
-        string safeValue;
-        if (string.IsNullOrWhiteSpace(nick)) safeValue = $"Player_{OwnerClientId}";
-        else safeValue = nick.Trim();
+        string safeValue = string.IsNullOrWhiteSpace(nick)
+            ? $"Player_{OwnerId}"
+            : nick.Trim();
         Nickname.Value = safeValue;
     }
-    
-    private void OnHpChanged(int prev, int next)
+
+    private void Hp_OnChange(int prev, int next, bool asServer)
     {
-        if (!IsServer) return;
-        
+        if (!asServer)
+            return;
+
         if (next <= 0 && IsAlive.Value)
         {
             IsAlive.Value = false;
@@ -63,18 +65,25 @@ public class PlayerNetwork : NetworkBehaviour
     private IEnumerator RespawnRoutine()
     {
         yield return new WaitForSeconds(3f);
-        
+
+        if (_spawnPoints == null || _spawnPoints.Length == 0)
+        {
+            Hp.Value = 100;
+            IsAlive.Value = true;
+            yield break;
+        }
+
         int idx = Random.Range(0, _spawnPoints.Length);
         Vector3 spawnPos = _spawnPoints[idx].transform.position + new Vector3(0, 3, 0);
-        
+
         transform.position = spawnPos;
-    
+
         Hp.Value = 100;
         IsAlive.Value = true;
     }
 
-    private void OnIsAliveChanged(bool prev, bool next)
+    private void IsAlive_OnChange(bool prev, bool next, bool asServer)
     {
-        meshRenderer.enabled = next;
+        if (meshRenderer) meshRenderer.enabled = next;
     }
 }

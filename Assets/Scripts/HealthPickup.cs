@@ -1,6 +1,5 @@
-using Unity.Netcode;
+using FishNet.Object;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 public class HealthPickup : NetworkBehaviour
 {
@@ -17,19 +16,14 @@ public class HealthPickup : NetworkBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (!IsServer) return;
-
-        var player = other.GetComponent<PlayerNetwork>();
-        
-        if (!player) return;
-        
+        if (!IsServerInitialized) return;
+        if (!other.TryGetComponent(out PlayerNetwork player)) return;
         if (!player.IsAlive.Value) return;
-
         if (player.Hp.Value >= 100) return;
 
         player.Hp.Value = Mathf.Min(100, player.Hp.Value + healAmount);
 
-        _manager.OnPickedUp(_spawnPosition);
-        NetworkObject.Despawn(destroy: true);
+        _manager?.OnPickedUp(_spawnPosition);
+        Despawn(DespawnType.Destroy);
     }
 }

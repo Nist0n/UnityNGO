@@ -56,6 +56,8 @@ public class PlayerMovement : TickNetworkBehaviour
             return;
         if (!IsOwner || !IsSpawned)
             return;
+        if (!GameManager.IsMatchInProgress)
+            return;
         if (!_playerNetwork || !_playerNetwork.IsAlive.Value)
             return;
 
@@ -89,6 +91,7 @@ public class PlayerMovement : TickNetworkBehaviour
     private MoveData BuildMoveData()
     {
         if (!IsOwner) return default;
+        if (!GameManager.IsMatchInProgress) return default;
         if (!_playerNetwork || !_playerNetwork.IsAlive.Value) return default;
 
         if (Keyboard.current == null) return default;

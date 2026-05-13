@@ -18,6 +18,7 @@ public class PlayerCombat : NetworkBehaviour
     private void Update()
     {
         if (!IsOwner) return;
+        if (!GameManager.IsMatchInProgress) return;
         if (Mouse.current == null) return;
         if (Mouse.current.leftButton.wasPressedThisFrame) TryAttackByClick();
     }
@@ -44,13 +45,18 @@ public class PlayerCombat : NetworkBehaviour
     private void DealDamageServerRpc(int targetObjectId, int damage)
     {
         if (!ServerManager) return;
+        if (!GameManager.IsMatchInProgress) return;
         if (!playerNetwork) playerNetwork = GetComponent<PlayerNetwork>();
         
         if (!ServerManager.Objects.Spawned.TryGetValue(targetObjectId, out NetworkObject targetObject)) return;
         
         if (!targetObject.TryGetComponent(out PlayerNetwork targetPlayer) || targetPlayer == playerNetwork) return;
-        
-        int nextHp = Mathf.Max(0, targetPlayer.Hp.Value - damage);
+
+        int prevHp = targetPlayer.Hp.Value;
+        if (prevHp <= 0) return;
+
+        int nextHp = Mathf.Max(0, prevHp - damage);
         targetPlayer.Hp.Value = nextHp;
+        playerNetwork.Score.Value++;
     }
 }

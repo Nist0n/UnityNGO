@@ -25,6 +25,7 @@ public class PlayerShooting : NetworkBehaviour
     private void Update()
     {
         if (!IsOwner) return;
+        if (!GameManager.IsMatchInProgress) return;
         if (Mouse.current == null) return;
         if (Mouse.current.leftButton.wasPressedThisFrame) ShootServerRpc(firePoint.position, firePoint.forward);
     }
@@ -32,6 +33,7 @@ public class PlayerShooting : NetworkBehaviour
     [ServerRpc]
     private void ShootServerRpc(Vector3 pos, Vector3 dir)
     {
+        if (!GameManager.IsMatchInProgress) return;
         if (!_playerNetwork) _playerNetwork = GetComponent<PlayerNetwork>();
         
         if (!_playerNetwork.IsAlive.Value) return;

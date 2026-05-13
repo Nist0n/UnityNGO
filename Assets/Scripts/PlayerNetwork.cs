@@ -7,10 +7,13 @@ using Random = UnityEngine.Random;
 public class PlayerNetwork : NetworkBehaviour
 {
     [SerializeField] private MeshRenderer meshRenderer;
+    [SerializeField] private PlayerShooting playerShooting;
+    
 
     public readonly SyncVar<string> Nickname = new("Player", new());
     public readonly SyncVar<int> Hp = new(100, new());
     public readonly SyncVar<bool> IsAlive = new(true, new());
+    public readonly SyncVar<int> Score = new(0, new());
 
     private GameObject[] _spawnPoints;
 
@@ -62,6 +65,8 @@ public class PlayerNetwork : NetworkBehaviour
         }
     }
 
+    public void RespawnPlayer() => StartCoroutine(RespawnRoutine());
+
     private IEnumerator RespawnRoutine()
     {
         yield return new WaitForSeconds(3f);
@@ -79,6 +84,7 @@ public class PlayerNetwork : NetworkBehaviour
         transform.position = spawnPos;
 
         Hp.Value = 100;
+        playerShooting.CurrentAmmo.Value = playerShooting.MaxAmmo;
         IsAlive.Value = true;
     }
 

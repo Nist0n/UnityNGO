@@ -203,8 +203,8 @@ MonoBehaviour:
   _addedNetworkObject: {fileID: 2677000673138560865}
   _networkObjectCache: {fileID: 2677000673138560865}
   _tickCallbacks: 6
-  _speed: 5
-  _useClientSidePrediction: 1
+  speed: 5
+  useClientSidePrediction: 1
 --- !u!114 &-4680069288730073533
 MonoBehaviour:
   m_ObjectHideFlags: 0
